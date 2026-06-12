@@ -53,7 +53,7 @@
       background: white;
       border-radius: 24px;
       padding: 40px;
-      width: min(380px, 100%);
+      width: 380px;
       text-align: center;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
@@ -110,7 +110,7 @@
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 24px;
       padding: 24px;
-      width: min(180px, 100%);
+      width: 180px;
       min-height: 400px;
       max-height: 560px;
       display: flex;
@@ -310,8 +310,10 @@
       border-radius: 12px;
       padding: 12px;
       margin-top: 16px;
-      font-size: 0.9em;
-      opacity: 0.85;
+      font-size: 1em;
+      font-weight: bold;
+      color: white;
+      opacity: 1;
     }
     #newHangmanBtn {
       background: linear-gradient(135deg, #4f8ef7, #7b5ea7);
@@ -330,54 +332,26 @@
     @media (max-width: 600px) {
       .nav { gap: 6px; padding: 10px; }
       .nav-btn { padding: 8px 12px; font-size: 0.8em; }
-
-      .screen.active {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 12px;
-        gap: 12px;
-      }
-
-      /* ניחוש מספר — לוח ניחושים קטן למעלה */
-      .history-panel {
-        width: 100%;
-        min-height: unset;
-        max-height: 120px;
-        padding: 12px;
-        flex-direction: column;
-      }
-      .history-list {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 6px;
-        overflow-y: hidden;
-        overflow-x: auto;
-      }
+      .screen.active { flex-direction: column; align-items: stretch; padding: 12px; gap: 12px; }
+      .history-panel { width: 100%; min-height: unset; max-height: 120px; padding: 12px; }
+      .history-list { flex-direction: row; flex-wrap: wrap; gap: 6px; overflow-y: hidden; overflow-x: auto; }
       .history-item { padding: 4px 10px; font-size: 0.85em; }
-
       .card { width: 100%; padding: 20px; }
       h1 { font-size: 1.5em; }
       input[type=number] { font-size: 1.3em; padding: 14px; }
       #guessBtn { font-size: 1.1em; padding: 14px; }
       #newBtn { padding: 14px; font-size: 1em; }
       .stat-num { font-size: 1.3em; }
-
-      /* מבחן מהירות */
       #speed-screen { padding: 8px; }
       .speed-area { width: 100%; height: 380px; }
       .speed-hud { width: 100%; gap: 6px; padding: 6px 0; }
       .hud-box { padding: 8px 10px; }
       .hud-num { font-size: 1.2em; }
-      .hud-label { font-size: 0.65em; }
-
-      /* איש תלוי */
       #hangman-screen { gap: 10px; }
       .hangman-info { width: 100%; padding: 14px; }
-      .mistakes-display { font-size: 1.5em; }
       .hangman-card { width: 100%; padding: 16px; }
       .key-btn { width: 34px; height: 34px; font-size: 0.85em; }
       #hangman-svg { width: 130px; height: 130px; }
-      .word-display { gap: 6px; }
       .letter-box { width: 28px; height: 36px; font-size: 1.2em; }
     }
   </style>
@@ -450,11 +424,11 @@
     <h3>❌ טעויות</h3>
     <div class="mistakes-display" id="hmMistakesEmoji">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
     <div style="font-size:0.85em; opacity:0.6;">נותרו <span id="hmMistakesLeft">10</span> טעויות</div>
-    <div class="hint-box" id="hmHint">בחר רמת קושי והתחל!</div>
     <button id="newHangmanBtn" onclick="newHangmanGame()">🔄 מילה חדשה</button>
   </div>
 
   <div class="hangman-card">
+    <div id="hmCatTop" style="font-size:1em; font-weight:bold; color:#4f8ef7; margin-bottom:4px; min-height:1.4em;"></div>
     <h1>🪢 איש תלוי</h1>
 
     <!-- ציור האיש בSVG -->
@@ -712,62 +686,94 @@
   }
 
   // ===== משחק 3: איש תלוי =====
-  // מילים קלות = קצרות (3-4 אותיות)
   const HM_EASY = [
-    { word: 'פיל',   hint: 'חיה אפורה וגדולה עם חדק' },
-    { word: 'כלב',   hint: 'החבר הכי טוב של האדם' },
-    { word: 'חתול',  hint: 'מיאו!' },
-    { word: 'דג',    hint: 'שוחה במים ויש לו סנפירים' },
-    { word: 'ארי',   hint: 'מלך החיות' },
-    { word: 'פרה',   hint: 'נותנת חלב' },
-    { word: 'תרנגול',hint: 'מעיר אותנו בבוקר' },
-    { word: 'ענן',   hint: 'צף בשמיים ולפעמים גשום' },
-    { word: 'שמש',   hint: 'זורחת ביום ומתחממים ממנה' },
-    { word: 'ירח',   hint: 'מאיר בלילה ומשנה צורה' },
-    { word: 'פיצה',  hint: 'בצק עגול עם גבינה ועגבניות' },
-    { word: 'סושי',  hint: 'אוכל יפני עם אורז ודגים' },
-    { word: 'לחם',   hint: 'אופים אותו בתנור ואוכלים בכל ארוחה' },
-    { word: 'ביצה',  hint: 'עוטפת גוזל לפני שנולד' },
-    { word: 'יפן',   hint: 'מדינה באסיה עם סמוראים' },
-    { word: 'סקי',   hint: 'ספורט חורף על שלג' },
-    { word: 'כדור',  hint: 'עגול ואפשר לזרוק אותו' },
-    { word: 'טניס',  hint: 'משחק עם מחבט ורשת' },
+    // חיות
+    { word: 'פיל',     cat: '🐘 חיות' }, { word: 'כלב',    cat: '🐘 חיות' },
+    { word: 'חתול',    cat: '🐘 חיות' }, { word: 'דג',     cat: '🐘 חיות' },
+    { word: 'ארי',     cat: '🐘 חיות' }, { word: 'פרה',    cat: '🐘 חיות' },
+    { word: 'חמור',    cat: '🐘 חיות' }, { word: 'כבש',    cat: '🐘 חיות' },
+    { word: 'עז',      cat: '🐘 חיות' }, { word: 'ברווז',  cat: '🐘 חיות' },
+    { word: 'נחש',     cat: '🐘 חיות' }, { word: 'צב',     cat: '🐘 חיות' },
+    { word: 'ארנב',    cat: '🐘 חיות' }, { word: 'סוס',    cat: '🐘 חיות' },
+    // אוכל
+    { word: 'פיצה',    cat: '🍕 אוכל' }, { word: 'לחם',    cat: '🍕 אוכל' },
+    { word: 'ביצה',    cat: '🍕 אוכל' }, { word: 'גבינה',  cat: '🍕 אוכל' },
+    { word: 'תפוח',    cat: '🍕 אוכל' }, { word: 'בננה',   cat: '🍕 אוכל' },
+    { word: 'עגבניה',  cat: '🍕 אוכל' }, { word: 'גזר',    cat: '🍕 אוכל' },
+    { word: 'דבש',     cat: '🍕 אוכל' }, { word: 'חלב',    cat: '🍕 אוכל' },
+    { word: 'אורז',    cat: '🍕 אוכל' }, { word: 'פסטה',   cat: '🍕 אוכל' },
+    // מדינות
+    { word: 'יפן',     cat: '🌍 מדינות' }, { word: 'צרפת',  cat: '🌍 מדינות' },
+    { word: 'ספרד',    cat: '🌍 מדינות' }, { word: 'הודו',  cat: '🌍 מדינות' },
+    { word: 'סין',     cat: '🌍 מדינות' }, { word: 'גרמניה',cat: '🌍 מדינות' },
+    // ספורט
+    { word: 'סקי',     cat: '⚽ ספורט' }, { word: 'טניס',   cat: '⚽ ספורט' },
+    { word: 'ריצה',    cat: '⚽ ספורט' }, { word: 'שחייה',  cat: '⚽ ספורט' },
+    { word: 'קפיצה',   cat: '⚽ ספורט' }, { word: 'איגרוף', cat: '⚽ ספורט' },
+    // חפצים ביתיים
+    { word: 'כיסא',    cat: '🏠 חפצים ביתיים' }, { word: 'שולחן', cat: '🏠 חפצים ביתיים' },
+    { word: 'מנורה',   cat: '🏠 חפצים ביתיים' }, { word: 'מיטה',  cat: '🏠 חפצים ביתיים' },
+    { word: 'ספה',     cat: '🏠 חפצים ביתיים' }, { word: 'מראה',  cat: '🏠 חפצים ביתיים' },
+    { word: 'שטיח',    cat: '🏠 חפצים ביתיים' }, { word: 'וילון', cat: '🏠 חפצים ביתיים' },
+    { word: 'מזלג',    cat: '🏠 חפצים ביתיים' }, { word: 'כף',    cat: '🏠 חפצים ביתיים' },
   ];
 
-  // מילים בינוניות (5-6 אותיות)
   const HM_MEDIUM = [
-    { word: 'תנין',    hint: 'זוחל גדול עם שיניים חדות שחי בנהרות' },
-    { word: 'קנגרו',   hint: 'חיה שקופצת ונושאת גורים בכיס בבטן' },
-    { word: 'דולפין',  hint: 'יונק חכם מאוד שחי בים' },
-    { word: 'תוכי',    hint: 'ציפור צבעונית שחוזרת על מילים' },
-    { word: 'עקרב',    hint: 'חרק קטן עם עוקץ מסוכן בזנב' },
-    { word: 'גלידה',   hint: 'קינוח קר שנמס מהר בקיץ' },
-    { word: 'שוקולד',  hint: 'ממתק חום שעשוי מפולי קקאו' },
-    { word: 'אבוקדו',  hint: 'פרי ירוק ובריא עם גרעין גדול' },
-    { word: 'ברזיל',   hint: 'המדינה הגדולה ביותר בדרום אמריקה' },
-    { word: 'מצרים',   hint: 'מדינה עתיקה עם פירמידות ונהר הנילוס' },
-    { word: 'קנדה',    hint: 'מדינה גדולה וקרה עם עלה מייפל בדגל' },
-    { word: 'מרוקו',   hint: 'מדינה בצפון אפריקה עם שווקים צבעוניים' },
-    { word: 'כדורגל',  hint: 'הספורט הפופולרי ביותר בעולם' },
-    { word: 'שחמט',    hint: 'משחק לוח שדורש הרבה חשיבה' },
-    { word: 'גלישה',   hint: 'ספורט על גלים בים עם קרש' },
-    { word: 'המבורגר', hint: 'לחמניה עגולה עם קציצת בשר' },
+    // חיות
+    { word: 'תנין',    cat: '🐘 חיות' }, { word: 'קנגרו',   cat: '🐘 חיות' },
+    { word: 'דולפין',  cat: '🐘 חיות' }, { word: 'תוכי',    cat: '🐘 חיות' },
+    { word: 'עקרב',    cat: '🐘 חיות' }, { word: 'טייגר',   cat: '🐘 חיות' },
+    { word: 'פנגולין', cat: '🐘 חיות' }, { word: 'לטאה',    cat: '🐘 חיות' },
+    { word: 'תמנון',   cat: '🐘 חיות' }, { word: 'צבוע',    cat: '🐘 חיות' },
+    { word: 'ג\'ירפה', cat: '🐘 חיות' }, { word: 'זאב',     cat: '🐘 חיות' },
+    // אוכל
+    { word: 'גלידה',   cat: '🍕 אוכל' }, { word: 'שוקולד',  cat: '🍕 אוכל' },
+    { word: 'אבוקדו',  cat: '🍕 אוכל' }, { word: 'המבורגר', cat: '🍕 אוכל' },
+    { word: 'פנקייק',  cat: '🍕 אוכל' }, { word: 'וופל',    cat: '🍕 אוכל' },
+    { word: 'שווארמה', cat: '🍕 אוכל' }, { word: 'חומוס',   cat: '🍕 אוכל' },
+    { word: 'קרואסון', cat: '🍕 אוכל' }, { word: 'לזניה',   cat: '🍕 אוכל' },
+    { word: 'בורקס',   cat: '🍕 אוכל' }, { word: 'פלאפל',   cat: '🍕 אוכל' },
+    // מדינות
+    { word: 'ברזיל',   cat: '🌍 מדינות' }, { word: 'מצרים',  cat: '🌍 מדינות' },
+    { word: 'קנדה',    cat: '🌍 מדינות' }, { word: 'מרוקו',  cat: '🌍 מדינות' },
+    { word: 'טורקיה',  cat: '🌍 מדינות' }, { word: 'מקסיקו', cat: '🌍 מדינות' },
+    { word: 'שוויץ',   cat: '🌍 מדינות' }, { word: 'יוון',   cat: '🌍 מדינות' },
+    { word: 'נורווגיה',cat: '🌍 מדינות' }, { word: 'פורטוגל',cat: '🌍 מדינות' },
+    // ספורט
+    { word: 'כדורגל',  cat: '⚽ ספורט' }, { word: 'שחמט',    cat: '⚽ ספורט' },
+    { word: 'גלישה',   cat: '⚽ ספורט' }, { word: 'כדורסל',  cat: '⚽ ספורט' },
+    { word: 'כדורעף',  cat: '⚽ ספורט' }, { word: 'גימנסטיקה',cat: '⚽ ספורט' },
+    { word: 'אתלטיקה', cat: '⚽ ספורט' }, { word: 'רכיבה',   cat: '⚽ ספורט' },
+    // חפצים ביתיים
+    { word: 'מקרר',    cat: '🏠 חפצים ביתיים' }, { word: 'תנור',    cat: '🏠 חפצים ביתיים' },
+    { word: 'מדיח',    cat: '🏠 חפצים ביתיים' }, { word: 'מכונת כביסה', cat: '🏠 חפצים ביתיים' },
+    { word: 'טלוויזיה',cat: '🏠 חפצים ביתיים' }, { word: 'מאוורר',  cat: '🏠 חפצים ביתיים' },
+    { word: 'מדפסת',   cat: '🏠 חפצים ביתיים' }, { word: 'שואב אבק',cat: '🏠 חפצים ביתיים' },
   ];
 
-  // מילים קשות = ארוכות ומורכבות (7+ אותיות)
   const HM_HARD = [
-    { word: 'פינגווין',  hint: 'ציפור שחורה לבנה ששוחה מצוין אך לא עפה' },
-    { word: 'אוסטרליה',  hint: 'יבשת שהיא גם מדינה שלמה' },
-    { word: 'איסלנד',    hint: 'מדינה עם געשים, שמה מטעה — היא לא כל כך קרה' },
-    { word: 'ג\'ירפה',   hint: 'החיה הגבוהה בעולם, רואה הכי רחוק' },
-    { word: 'אנציקלופדיה', hint: 'ספר ידע גדול עם מידע על הכל' },
-    { word: 'פסיכולוגיה', hint: 'מדע שחוקר את המוח וההתנהגות' },
-    { word: 'אלקטרוניקה', hint: 'תחום שבלעדיו אין טלפונים ומחשבים' },
-    { word: 'דינוזאור',  hint: 'חיה ענקית שחיה לפני מיליוני שנים' },
-    { word: 'וולקנו',    hint: 'הר שיכול לפרוץ ולשפוך לבה' },
-    { word: 'אסטרונאוט', hint: 'אדם שטס לחלל' },
-    { word: 'כדורסל',    hint: 'ספורט עם טבעת גבוהה וכדור כתום' },
-    { word: 'שוקולד מריר', hint: 'ממתק חום שפחות מתוק מהרגיל' },
+    // חיות
+    { word: 'פינגווין',    cat: '🐘 חיות' }, { word: 'קרנף',       cat: '🐘 חיות' },
+    { word: 'שימפנזה',     cat: '🐘 חיות' }, { word: 'אורנגאוטן',  cat: '🐘 חיות' },
+    { word: 'זיקית',       cat: '🐘 חיות' }, { word: 'דינוזאור',   cat: '🐘 חיות' },
+    // אוכל
+    { word: 'שוקולד מריר', cat: '🍕 אוכל' }, { word: 'גספצ\'ו',    cat: '🍕 אוכל' },
+    { word: 'קרם ברולה',   cat: '🍕 אוכל' }, { word: 'מוצרלה',     cat: '🍕 אוכל' },
+    { word: 'קפוצ\'ינו',   cat: '🍕 אוכל' }, { word: 'גואקמולה',   cat: '🍕 אוכל' },
+    { word: 'טירמיסו',     cat: '🍕 אוכל' }, { word: 'פרמזן',      cat: '🍕 אוכל' },
+    // מדינות
+    { word: 'אוסטרליה',    cat: '🌍 מדינות' }, { word: 'איסלנד',    cat: '🌍 מדינות' },
+    { word: 'אינדונזיה',   cat: '🌍 מדינות' }, { word: 'קזחסטן',    cat: '🌍 מדינות' },
+    { word: 'מדגסקר',      cat: '🌍 מדינות' }, { word: 'אפגניסטן',  cat: '🌍 מדינות' },
+    { word: 'אקוודור',     cat: '🌍 מדינות' }, { word: 'מוזמביק',   cat: '🌍 מדינות' },
+    // ספורט
+    { word: 'פנטתלון',     cat: '⚽ ספורט' }, { word: 'טריאתלון',   cat: '⚽ ספורט' },
+    { word: 'פנסינג',      cat: '⚽ ספורט' }, { word: 'טאקוונדו',   cat: '⚽ ספורט' },
+    { word: 'סקייטבורד',   cat: '⚽ ספורט' }, { word: 'פאדל',       cat: '⚽ ספורט' },
+    // חפצים ביתיים
+    { word: 'מזגן',        cat: '🏠 חפצים ביתיים' }, { word: 'מיקרוגל',  cat: '🏠 חפצים ביתיים' },
+    { word: 'מעקה מדרגות', cat: '🏠 חפצים ביתיים' }, { word: 'מכונת קפה',cat: '🏠 חפצים ביתיים' },
+    { word: 'ארון בגדים',  cat: '🏠 חפצים ביתיים' }, { word: 'מנהרת כביסה', cat: '🏠 חפצים ביתיים' },
   ];
 
   const HM_PARTS = ['hm-head','hm-body','hm-arm-r','hm-arm-l','hm-leg-r','hm-leg-l','hm-eye-r','hm-eye-l','hm-mouth','hm-foot-r','hm-foot-l'];
@@ -780,6 +786,7 @@
   let hmMistakes = 0;
   let hmGameOver = false;
   let hmDifficulty = 'easy';
+  let hmUsedWords = { easy: [], medium: [], hard: [] };
 
   function setDifficulty(level) {
     hmDifficulty = level;
@@ -799,13 +806,26 @@
       btn.onclick = () => hmGuess(letter);
       kb.appendChild(btn);
     });
+    // כפתור רווח תמיד מופיע
+    const spaceBtn = document.createElement('button');
+    spaceBtn.className = 'key-btn';
+    spaceBtn.textContent = 'רווח ___';
+    spaceBtn.id = 'key- ';
+    spaceBtn.style.width = '90px';
+    spaceBtn.onclick = () => hmGuess(' ');
+    kb.appendChild(spaceBtn);
   }
 
   function newHangmanGame() {
     const list = hmDifficulty === 'easy' ? HM_EASY : hmDifficulty === 'medium' ? HM_MEDIUM : HM_HARD;
-    const pick = list[Math.floor(Math.random() * list.length)];
+    // אם השתמשנו בכל המילים — נאפס ונתחיל מחדש
+    if (hmUsedWords[hmDifficulty].length >= list.length) hmUsedWords[hmDifficulty] = [];
+    // בחר מילה שלא יצאה עדיין
+    const remaining = list.filter(w => !hmUsedWords[hmDifficulty].includes(w.word));
+    const pick = remaining[Math.floor(Math.random() * remaining.length)];
+    hmUsedWords[hmDifficulty].push(pick.word);
     hmWord     = pick.word;
-    hmHint     = pick.hint;
+    hmHint     = pick.cat;
     hmGuessed  = [];
     hmMistakes = 0;
     hmGameOver = false;
@@ -818,13 +838,13 @@
     document.getElementById('hmMistakesLeft').textContent = 10;
 
     // רמז
-    document.getElementById('hmHint').textContent = hmHint;
 
     // סטטוס
     const st = document.getElementById('hmStatus');
     st.className = 'hangman-status playing';
     st.textContent = 'נחש את המילה! 🤔';
 
+    document.getElementById('hmCatTop').textContent = hmHint || '';
     buildKeyboard();
     renderWord();
   }
@@ -835,7 +855,11 @@
     hmWord.split('').forEach(letter => {
       const box = document.createElement('div');
       box.className = 'letter-box';
-      box.textContent = hmGuessed.includes(letter) ? letter : '';
+      if (letter === ' ') {
+        box.textContent = hmGuessed.includes(' ') ? '-' : '';
+      } else {
+        box.textContent = hmGuessed.includes(letter) ? letter : '';
+      }
       container.appendChild(box);
     });
   }
