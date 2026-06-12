@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>🎮 משחקים</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ===== תפריט עליון ===== */
+    .nav {
+      display: flex;
+      gap: 12px;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
+      width: 100%;
+      justify-content: center;
+    }
+    .nav-btn {
+      padding: 10px 28px;
+      border-radius: 30px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+    .nav-btn.active {
+      background: linear-gradient(135deg, #4f8ef7, #7b5ea7);
+      color: white;
+      border-color: transparent;
+    }
+
+    /* ===== מסכים ===== */
+    .screen { display: none; width: 100%; flex: 1; }
+    .screen.active { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 30px; }
+
+    /* ===== כרטיס לבן ===== */
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    h1 { margin: 0 0 8px; font-size: 2em; }
+    .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.96); }
+
+    /* ===== משחק 1 — ניחוש מספר ===== */
+    .message {
+      background: #f0f4ff;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1.1em;
+      color: #333;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      transition: all 0.3s;
+    }
+    .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    input[type=number] {
+      flex: 1; padding: 12px; font-size: 1.4em;
+      border: 2px solid #ddd; border-radius: 12px;
+      text-align: center; outline: none;
+    }
+    input[type=number]:focus { border-color: #4f8ef7; }
+    #guessBtn { background: linear-gradient(135deg, #4f8ef7, #7b5ea7); color: white; flex: 1; }
+    #newBtn { background: #eee; color: #555; width: 100%; margin-top: 10px; }
+    .bar-label { color: #aaa; font-size: 0.85em; margin-bottom: 6px; text-align: right; }
+    .bar-bg { background: #eee; border-radius: 10px; height: 18px; overflow: hidden; margin-bottom: 20px; }
+    .bar-fill { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #4f8ef7, #7b5ea7); transition: width 0.5s ease; }
+    .stats { display: flex; justify-content: space-around; background: #f8f8f8; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.5em; font-weight: bold; color: #4f8ef7; }
+    .stat-label { font-size: 0.75em; color: #aaa; }
+    .msg-win { background: #e8fff0 !important; color: #27ae60 !important; font-weight: bold; font-size: 1.2em !important; }
+
+    /* לוח היסטוריה */
+    .history-panel {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 24px;
+      width: 180px;
+      min-height: 400px;
+      max-height: 560px;
+      display: flex;
+      flex-direction: column;
+    }
+    .history-title { color: white; font-size: 1em; font-weight: bold; text-align: center; margin-bottom: 16px; }
+    .history-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px;
+      color: white; font-size: 0.95em; animation: fadeIn 0.3s ease;
+    }
+    .history-item.low  { border-right: 3px solid #4f8ef7; }
+    .history-item.high { border-right: 3px solid #e67e22; }
+    .history-item.win  { border-right: 3px solid #27ae60; background: rgba(39,174,96,0.2); }
+    .history-num { font-weight: bold; font-size: 1.1em; }
+    .history-empty { color: rgba(255,255,255,0.4); font-size: 0.85em; text-align: center; margin-top: 20px; }
+
+    /* ===== משחק 2 — מבחן מהירות ===== */
+    #speed-screen {
+      flex-direction: column;
+    }
+    .speed-area {
+      position: relative;
+      width: 800px;
+      height: 500px;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .speed-hud {
+      display: flex;
+      justify-content: space-between;
+      width: 800px;
+      padding: 12px 0;
+      color: white;
+    }
+    .hud-box {
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 10px 24px;
+      text-align: center;
+    }
+    .hud-num { font-size: 1.8em; font-weight: bold; }
+    .hud-label { font-size: 0.75em; opacity: 0.7; }
+    #speedStartBtn {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #f7974f, #e74c3c);
+      color: white;
+      font-size: 1.3em;
+      padding: 16px 40px;
+      border-radius: 16px;
+      border: none;
+    }
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 0.9em;
+      transition: transform 0.1s;
+      animation: popIn 0.15s ease;
+      user-select: none;
+    }
+    .circle:hover { transform: scale(1.1); }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .burst {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: burst 0.4s ease forwards;
+    }
+    @keyframes burst {
+      from { transform: scale(1); opacity: 0.8; }
+      to   { transform: scale(3); opacity: 0; }
+    }
+    .speed-result {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      display: none;
+    }
+    .speed-result h2 { font-size: 2.5em; margin: 0; }
+    .speed-result p { font-size: 1.1em; opacity: 0.8; }
+    .speed-result button {
+      background: linear-gradient(135deg, #4f8ef7, #7b5ea7);
+      color: white; font-size: 1.1em; padding: 12px 32px; border-radius: 14px; margin-top: 12px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    .circle.static { animation: popIn 0.15s ease, pulse 1s infinite; }
+
+    /* ===== איש תלוי ===== */
+    #hangman-screen { align-items: center; justify-content: center; gap: 40px; }
+
+    .hangman-card {
+      background: white;
+      border-radius: 24px;
+      padding: 36px;
+      width: 420px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    #hangman-svg { margin-bottom: 10px; }
+
+    .word-display {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .letter-box {
+      width: 36px;
+      height: 44px;
+      border-bottom: 3px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin: 16px 0;
+    }
+    .key-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid #ddd;
+      background: #f8f8f8;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .key-btn:hover:not(:disabled) { background: #4f8ef7; color: white; border-color: #4f8ef7; }
+    .key-btn.correct { background: #2ecc71; color: white; border-color: #2ecc71; }
+    .key-btn.wrong   { background: #e74c3c; color: white; border-color: #e74c3c; opacity: 0.5; }
+    .key-btn:disabled { cursor: default; }
+
+    .hangman-status {
+      font-size: 1.1em;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .hangman-status.playing { background: #f0f4ff; color: #333; }
+    .hangman-status.win  { background: #e8fff0; color: #27ae60; }
+    .hangman-status.lose { background: #fff0f0; color: #e74c3c; }
+
+    .hangman-info {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 28px;
+      width: 200px;
+      color: white;
+      text-align: center;
+    }
+    .hangman-info h3 { margin: 0 0 16px; font-size: 1em; opacity: 0.8; }
+    .diff-btn {
+      width: 100%; padding: 9px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2);
+      background: transparent; color: rgba(255,255,255,0.6); font-size: 0.95em;
+      font-weight: bold; cursor: pointer; transition: all 0.2s;
+    }
+    .diff-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+    .diff-btn.active { background: linear-gradient(135deg, #4f8ef7, #7b5ea7); color: white; border-color: transparent; }
+    .mistakes-display { font-size: 3em; margin: 10px 0; }
+    .hint-box {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 16px;
+      font-size: 0.9em;
+      opacity: 0.85;
+    }
+    #newHangmanBtn {
+      background: linear-gradient(135deg, #4f8ef7, #7b5ea7);
+      color: white;
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- תפריט עליון -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showScreen('guess', this)">🔢 ניחוש מספר</button>
+  <button class="nav-btn" onclick="showScreen('speed', this)">⚡ מבחן מהירות</button>
+  <button class="nav-btn" onclick="showScreen('hangman', this)">🪢 איש תלוי</button>
+</nav>
+
+<!-- ===== מסך 1: ניחוש מספר ===== -->
+<div class="screen active" id="guess-screen">
+
+  <div class="history-panel">
+    <div class="history-title">📋 הניחושים שלי</div>
+    <div class="history-list" id="historyList">
+      <div class="history-empty" id="historyEmpty">עדיין אין ניחושים...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1>🔢 ניחוש מספר</h1>
+    <p class="subtitle">מצא את המספר הסודי שבחרתי!</p>
+    <div class="message" id="msg">בחרתי מספר בין 1 ל-100 — נחש! 🤔</div>
+    <div class="input-row">
+      <input type="number" id="inp" min="1" max="100" placeholder="1–100" />
+      <button id="guessBtn" onclick="guess()">נחש 🎯</button>
+    </div>
+    <div class="bar-label">קרבה למספר הסודי:</div>
+    <div class="bar-bg"><div class="bar-fill" id="bar"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="count">0</div><div class="stat-label">ניחושים</div></div>
+      <div class="stat"><div class="stat-num" id="best">—</div><div class="stat-label">שיא אישי</div></div>
+    </div>
+    <button id="newBtn" onclick="newGuessGame()">🔄 משחק חדש</button>
+  </div>
+</div>
+
+<!-- ===== מסך 2: מבחן מהירות ===== -->
+<div class="screen" id="speed-screen">
+  <div class="speed-hud">
+    <div class="hud-box"><div class="hud-num" id="speedScore">0</div><div class="hud-label">נקודות</div></div>
+    <div class="hud-box"><div class="hud-num" id="speedTimer">45</div><div class="hud-label">שניות</div></div>
+    <div class="hud-box"><div class="hud-num" id="speedBest">—</div><div class="hud-label">שיא אישי</div></div>
+  </div>
+  <div class="speed-area" id="speedArea">
+    <button id="speedStartBtn" onclick="startSpeedGame()">▶ התחל משחק!</button>
+    <div class="speed-result" id="speedResult">
+      <h2>⏱️ הזמן נגמר!</h2>
+      <p id="resultText"></p>
+      <button onclick="startSpeedGame()">🔄 שוב!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== מסך 3: איש תלוי ===== -->
+<div class="screen" id="hangman-screen">
+
+  <!-- לוח רמת קושי -->
+  <div class="hangman-info">
+    <h3 style="margin-bottom:10px;">🎯 רמת קושי</h3>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+      <button class="diff-btn active" id="diff-easy"   onclick="setDifficulty('easy')">😊 קל</button>
+      <button class="diff-btn"        id="diff-medium" onclick="setDifficulty('medium')">😐 בינוני</button>
+      <button class="diff-btn"        id="diff-hard"   onclick="setDifficulty('hard')">😈 קשה</button>
+    </div>
+    <h3>❌ טעויות</h3>
+    <div class="mistakes-display" id="hmMistakesEmoji">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
+    <div style="font-size:0.85em; opacity:0.6;">נותרו <span id="hmMistakesLeft">10</span> טעויות</div>
+    <div class="hint-box" id="hmHint">בחר רמת קושי והתחל!</div>
+    <button id="newHangmanBtn" onclick="newHangmanGame()">🔄 מילה חדשה</button>
+  </div>
+
+  <div class="hangman-card">
+    <h1>🪢 איש תלוי</h1>
+
+    <!-- ציור האיש בSVG -->
+    <svg id="hangman-svg" width="180" height="180" viewBox="0 0 180 180">
+      <!-- עמוד התליה -->
+      <line x1="20" y1="170" x2="160" y2="170" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="170" x2="60" y2="10"  stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="10"  x2="110" y2="10" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <line x1="110" y1="10" x2="110" y2="35" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <!-- חלקי הגוף — נסתרים בהתחלה -->
+      <circle id="hm-head"   cx="110" cy="50" r="16" stroke="#e74c3c" stroke-width="3" fill="none" style="display:none"/>
+      <line   id="hm-body"   x1="110" y1="66" x2="110" y2="110" stroke="#e74c3c" stroke-width="3" style="display:none"/>
+      <line   id="hm-arm-r"  x1="110" y1="75" x2="85"  y2="95"  stroke="#e74c3c" stroke-width="3" style="display:none"/>
+      <line   id="hm-arm-l"  x1="110" y1="75" x2="135" y2="95"  stroke="#e74c3c" stroke-width="3" style="display:none"/>
+      <line   id="hm-leg-r"  x1="110" y1="110" x2="88" y2="138" stroke="#e74c3c" stroke-width="3" style="display:none"/>
+      <line   id="hm-leg-l"  x1="110" y1="110" x2="132" y2="138" stroke="#e74c3c" stroke-width="3" style="display:none"/>
+      <!-- חלקים נוספים -->
+      <circle id="hm-eye-r"  cx="105" cy="46" r="2.5" fill="#e74c3c" style="display:none"/>
+      <circle id="hm-eye-l"  cx="115" cy="46" r="2.5" fill="#e74c3c" style="display:none"/>
+      <path   id="hm-mouth"  d="M105 56 Q110 60 115 56" stroke="#e74c3c" stroke-width="2" fill="none" style="display:none"/>
+      <line   id="hm-foot-r" x1="88"  y1="138" x2="78" y2="142" stroke="#e74c3c" stroke-width="3" stroke-linecap="round" style="display:none"/>
+      <line   id="hm-foot-l" x1="132" y1="138" x2="142" y2="142" stroke="#e74c3c" stroke-width="3" stroke-linecap="round" style="display:none"/>
+    </svg>
+
+    <div class="hangman-status playing" id="hmStatus">נחש את המילה! 🤔</div>
+    <div class="word-display" id="hmWord"></div>
+
+    <!-- מקלדת עברית -->
+    <div class="keyboard" id="hmKeyboard"></div>
+  </div>
+</div>
+
+<script>
+  // ===== ניווט בין מסכים =====
+  function showScreen(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(name + '-screen').classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // ===== משחק 1: ניחוש מספר =====
+  let secret = rand();
+  let count = 0;
+  let bestGuess = null;
+
+  function rand() { return Math.floor(Math.random() * 100) + 1; }
+
+  document.getElementById('inp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') guess();
+  });
+
+  function guess() {
+    const inp = document.getElementById('inp');
+    const val = parseInt(inp.value);
+    if (!val || val < 1 || val > 100) {
+      setMsg('⚠️ תכניס מספר בין 1 ל-100!', '#e74c3c'); return;
+    }
+    count++;
+    document.getElementById('count').textContent = count;
+    const diff = Math.abs(val - secret);
+    document.getElementById('bar').style.width = Math.max(0, 100 - diff) + '%';
+
+    if (val < secret) {
+      diff > 30 ? setMsg('📉 נמוך מאוד! קפוץ הרבה למעלה', '#3498db')
+                : setMsg('⬆️ קצת נמוך, עוד קצת!', '#2980b9');
+      addHistory(val, 'low', '⬆️');
+    } else if (val > secret) {
+      diff > 30 ? setMsg('📈 גבוה מאוד! רד הרבה למטה', '#e67e22')
+                : setMsg('⬇️ קצת גבוה, עוד קצת!', '#d35400');
+      addHistory(val, 'high', '⬇️');
+    } else {
+      addHistory(val, 'win', '🎉');
+      if (bestGuess === null || count < bestGuess) {
+        bestGuess = count;
+        document.getElementById('best').textContent = bestGuess;
+      }
+      const m = document.getElementById('msg');
+      m.className = 'message msg-win';
+      m.textContent = `🎉 כל הכבוד! ניחשת ב-${count} ניחושים!`;
+      document.getElementById('guessBtn').disabled = true;
+      inp.disabled = true;
+      return;
+    }
+    inp.value = ''; inp.focus();
+  }
+
+  function setMsg(text, color) {
+    const m = document.getElementById('msg');
+    m.className = 'message';
+    m.textContent = text;
+    m.style.color = color;
+    m.style.background = color + '15';
+  }
+
+  function addHistory(num, type, arrow) {
+    document.getElementById('historyEmpty').style.display = 'none';
+    const list = document.getElementById('historyList');
+    const item = document.createElement('div');
+    item.className = `history-item ${type}`;
+    item.innerHTML = `<span class="history-num">${num}</span><span class="history-arrow">${arrow}</span>`;
+    list.insertBefore(item, list.firstChild);
+  }
+
+  function newGuessGame() {
+    secret = rand(); count = 0;
+    document.getElementById('count').textContent = 0;
+    document.getElementById('bar').style.width = '0%';
+    const m = document.getElementById('msg');
+    m.className = 'message'; m.style.color = '#333'; m.style.background = '#f0f4ff';
+    m.textContent = 'בחרתי מספר בין 1 ל-100 — נחש! 🤔';
+    document.getElementById('guessBtn').disabled = false;
+    const inp = document.getElementById('inp');
+    inp.disabled = false; inp.value = ''; inp.focus();
+    document.getElementById('historyList').innerHTML =
+      '<div class="history-empty" id="historyEmpty">עדיין אין ניחושים...</div>';
+  }
+
+  // ===== משחק 2: מבחן מהירות =====
+  const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63'];
+  let speedScore = 0;
+  let speedBest = null;
+  let timerInterval = null;
+  let timeLeft = 45;
+  let gameRunning = false;
+
+  function startSpeedGame() {
+    speedScore = 0;
+    timeLeft = 45;
+    gameRunning = true;
+    document.getElementById('speedScore').textContent = 0;
+    document.getElementById('speedTimer').textContent = 45;
+    document.getElementById('speedStartBtn').style.display = 'none';
+    document.getElementById('speedResult').style.display = 'none';
+
+    // ניקוי עיגולים קודמים
+    document.querySelectorAll('.circle').forEach(c => c.remove());
+
+    // הוסף עיגול ראשון
+    addCircle(); addCircle(); addCircle();
+
+    // טיימר
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('speedTimer').textContent = timeLeft;
+      if (timeLeft <= 0) endSpeedGame();
+    }, 1000);
+  }
+
+  function addCircle() {
+    if (!gameRunning) return;
+    const area = document.getElementById('speedArea');
+    const sizes = [40, 55, 70, 90];
+    const points = [5, 3, 2, 1];
+    const idx = Math.floor(Math.random() * sizes.length);
+    const size = sizes[idx];
+    const pts = points[idx];
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+    const circle = document.createElement('div');
+    circle.className = 'circle';
+    circle.style.width = size + 'px';
+    circle.style.height = size + 'px';
+    circle.style.background = color;
+    circle.style.boxShadow = `0 4px 20px ${color}88`;
+    circle.style.left = Math.random() * (area.offsetWidth - size) + 'px';
+    circle.style.top  = Math.random() * (area.offsetHeight - size) + 'px';
+    circle.textContent = '+' + pts;
+
+    // האם העיגול יזוז? — 35% סיכוי
+    const moving = Math.random() < 0.35;
+    if (!moving) {
+      circle.classList.add('static'); // פעימה לעיגולים רגילים
+    }
+    if (moving) {
+      // עיגול זז = 5-8 נקודות
+      const movingPts = Math.floor(Math.random() * 4) + 5;
+      circle.textContent = '+' + movingPts;
+      circle._pts = movingPts;
+      circle.style.outline = '3px dashed white'; // עיגול זז = מסגרת מקווקוות
+      let dx = (Math.random() * 3 + 1.5) * (Math.random() < 0.5 ? 1 : -1);
+      let dy = (Math.random() * 3 + 1.5) * (Math.random() < 0.5 ? 1 : -1);
+      let x = parseFloat(circle.style.left);
+      let y = parseFloat(circle.style.top);
+
+      const moveInterval = setInterval(() => {
+        if (!circle.parentNode) { clearInterval(moveInterval); return; }
+        x += dx; y += dy;
+        // הקפצה מהקירות
+        if (x < 0) { x = 0; dx *= -1; }
+        if (y < 0) { y = 0; dy *= -1; }
+        if (x > area.offsetWidth  - size) { x = area.offsetWidth  - size; dx *= -1; }
+        if (y > area.offsetHeight - size) { y = area.offsetHeight - size; dy *= -1; }
+        circle.style.left = x + 'px';
+        circle.style.top  = y + 'px';
+      }, 16); // ~60 פריימים בשנייה
+
+      circle._moveInterval = moveInterval;
+    }
+
+    circle.addEventListener('click', () => {
+      if (!gameRunning) return;
+      speedScore += circle._pts || pts;
+      document.getElementById('speedScore').textContent = speedScore;
+      showBurst(circle, color);
+      if (circle._moveInterval) clearInterval(circle._moveInterval);
+      circle.remove();
+      addCircle();
+    });
+
+    area.appendChild(circle);
+
+    // עיגול נעים — נעלם אחרי 5 שניות
+    // עיגול רגיל — נעלם אחרי 3 שניות
+    setTimeout(() => {
+      if (circle.parentNode) {
+        if (circle._moveInterval) clearInterval(circle._moveInterval);
+        circle.remove();
+        addCircle();
+      }
+    }, moving ? 5000 : 3000);
+  }
+
+  function showBurst(circle, color) {
+    const area = document.getElementById('speedArea');
+    // getBoundingClientRect נותן את המיקום האמיתי של העיגול על המסך
+    const areaRect = area.getBoundingClientRect();
+    const circleRect = circle.getBoundingClientRect();
+    const burst = document.createElement('div');
+    burst.className = 'burst';
+    burst.style.width = circle.style.width;
+    burst.style.height = circle.style.height;
+    burst.style.left = (circleRect.left - areaRect.left) + 'px';
+    burst.style.top  = (circleRect.top  - areaRect.top)  + 'px';
+    burst.style.background = color;
+    burst.style.zIndex = 10;
+    area.appendChild(burst);
+    setTimeout(() => burst.remove(), 400);
+  }
+
+  function endSpeedGame() {
+    clearInterval(timerInterval);
+    gameRunning = false;
+    document.querySelectorAll('.circle').forEach(c => c.remove());
+
+    if (speedBest === null || speedScore > speedBest) {
+      speedBest = speedScore;
+      document.getElementById('speedBest').textContent = speedBest;
+    }
+
+    const res = document.getElementById('speedResult');
+    document.getElementById('resultText').textContent =
+      `קיבלת ${speedScore} נקודות! השיא שלך: ${speedBest} 🏆`;
+    res.style.display = 'block';
+  }
+
+  // ===== משחק 3: איש תלוי =====
+  // מילים קלות = קצרות (3-4 אותיות)
+  const HM_EASY = [
+    { word: 'פיל',   hint: 'חיה אפורה וגדולה עם חדק' },
+    { word: 'כלב',   hint: 'החבר הכי טוב של האדם' },
+    { word: 'חתול',  hint: 'מיאו!' },
+    { word: 'דג',    hint: 'שוחה במים ויש לו סנפירים' },
+    { word: 'ארי',   hint: 'מלך החיות' },
+    { word: 'פרה',   hint: 'נותנת חלב' },
+    { word: 'תרנגול',hint: 'מעיר אותנו בבוקר' },
+    { word: 'ענן',   hint: 'צף בשמיים ולפעמים גשום' },
+    { word: 'שמש',   hint: 'זורחת ביום ומתחממים ממנה' },
+    { word: 'ירח',   hint: 'מאיר בלילה ומשנה צורה' },
+    { word: 'פיצה',  hint: 'בצק עגול עם גבינה ועגבניות' },
+    { word: 'סושי',  hint: 'אוכל יפני עם אורז ודגים' },
+    { word: 'לחם',   hint: 'אופים אותו בתנור ואוכלים בכל ארוחה' },
+    { word: 'ביצה',  hint: 'עוטפת גוזל לפני שנולד' },
+    { word: 'יפן',   hint: 'מדינה באסיה עם סמוראים' },
+    { word: 'סקי',   hint: 'ספורט חורף על שלג' },
+    { word: 'כדור',  hint: 'עגול ואפשר לזרוק אותו' },
+    { word: 'טניס',  hint: 'משחק עם מחבט ורשת' },
+  ];
+
+  // מילים בינוניות (5-6 אותיות)
+  const HM_MEDIUM = [
+    { word: 'תנין',    hint: 'זוחל גדול עם שיניים חדות שחי בנהרות' },
+    { word: 'קנגרו',   hint: 'חיה שקופצת ונושאת גורים בכיס בבטן' },
+    { word: 'דולפין',  hint: 'יונק חכם מאוד שחי בים' },
+    { word: 'תוכי',    hint: 'ציפור צבעונית שחוזרת על מילים' },
+    { word: 'עקרב',    hint: 'חרק קטן עם עוקץ מסוכן בזנב' },
+    { word: 'גלידה',   hint: 'קינוח קר שנמס מהר בקיץ' },
+    { word: 'שוקולד',  hint: 'ממתק חום שעשוי מפולי קקאו' },
+    { word: 'אבוקדו',  hint: 'פרי ירוק ובריא עם גרעין גדול' },
+    { word: 'ברזיל',   hint: 'המדינה הגדולה ביותר בדרום אמריקה' },
+    { word: 'מצרים',   hint: 'מדינה עתיקה עם פירמידות ונהר הנילוס' },
+    { word: 'קנדה',    hint: 'מדינה גדולה וקרה עם עלה מייפל בדגל' },
+    { word: 'מרוקו',   hint: 'מדינה בצפון אפריקה עם שווקים צבעוניים' },
+    { word: 'כדורגל',  hint: 'הספורט הפופולרי ביותר בעולם' },
+    { word: 'שחמט',    hint: 'משחק לוח שדורש הרבה חשיבה' },
+    { word: 'גלישה',   hint: 'ספורט על גלים בים עם קרש' },
+    { word: 'המבורגר', hint: 'לחמניה עגולה עם קציצת בשר' },
+  ];
+
+  // מילים קשות = ארוכות ומורכבות (7+ אותיות)
+  const HM_HARD = [
+    { word: 'פינגווין',  hint: 'ציפור שחורה לבנה ששוחה מצוין אך לא עפה' },
+    { word: 'אוסטרליה',  hint: 'יבשת שהיא גם מדינה שלמה' },
+    { word: 'איסלנד',    hint: 'מדינה עם געשים, שמה מטעה — היא לא כל כך קרה' },
+    { word: 'ג\'ירפה',   hint: 'החיה הגבוהה בעולם, רואה הכי רחוק' },
+    { word: 'אנציקלופדיה', hint: 'ספר ידע גדול עם מידע על הכל' },
+    { word: 'פסיכולוגיה', hint: 'מדע שחוקר את המוח וההתנהגות' },
+    { word: 'אלקטרוניקה', hint: 'תחום שבלעדיו אין טלפונים ומחשבים' },
+    { word: 'דינוזאור',  hint: 'חיה ענקית שחיה לפני מיליוני שנים' },
+    { word: 'וולקנו',    hint: 'הר שיכול לפרוץ ולשפוך לבה' },
+    { word: 'אסטרונאוט', hint: 'אדם שטס לחלל' },
+    { word: 'כדורסל',    hint: 'ספורט עם טבעת גבוהה וכדור כתום' },
+    { word: 'שוקולד מריר', hint: 'ממתק חום שפחות מתוק מהרגיל' },
+  ];
+
+  const HM_PARTS = ['hm-head','hm-body','hm-arm-r','hm-arm-l','hm-leg-r','hm-leg-l','hm-eye-r','hm-eye-l','hm-mouth','hm-foot-r','hm-foot-l'];
+  const HM_HEARTS = ['❤️','❤️','❤️','❤️','❤️','❤️','❤️','❤️','❤️','❤️'];
+  const HM_LETTERS = 'אבגדהוזחטיכךלמםנןסעפףצץקרשת'.split('');
+
+  let hmWord = '';
+  let hmHint = '';
+  let hmGuessed = [];
+  let hmMistakes = 0;
+  let hmGameOver = false;
+  let hmDifficulty = 'easy';
+
+  function setDifficulty(level) {
+    hmDifficulty = level;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('diff-' + level).classList.add('active');
+    newHangmanGame();
+  }
+
+  function buildKeyboard() {
+    const kb = document.getElementById('hmKeyboard');
+    kb.innerHTML = '';
+    HM_LETTERS.forEach(letter => {
+      const btn = document.createElement('button');
+      btn.className = 'key-btn';
+      btn.textContent = letter;
+      btn.id = 'key-' + letter;
+      btn.onclick = () => hmGuess(letter);
+      kb.appendChild(btn);
+    });
+  }
+
+  function newHangmanGame() {
+    const list = hmDifficulty === 'easy' ? HM_EASY : hmDifficulty === 'medium' ? HM_MEDIUM : HM_HARD;
+    const pick = list[Math.floor(Math.random() * list.length)];
+    hmWord     = pick.word;
+    hmHint     = pick.hint;
+    hmGuessed  = [];
+    hmMistakes = 0;
+    hmGameOver = false;
+
+    // איפוס ציור
+    HM_PARTS.forEach(id => document.getElementById(id).style.display = 'none');
+
+    // איפוס לבבות
+    document.getElementById('hmMistakesEmoji').textContent = HM_HEARTS.join('');
+    document.getElementById('hmMistakesLeft').textContent = 10;
+
+    // רמז
+    document.getElementById('hmHint').textContent = hmHint;
+
+    // סטטוס
+    const st = document.getElementById('hmStatus');
+    st.className = 'hangman-status playing';
+    st.textContent = 'נחש את המילה! 🤔';
+
+    buildKeyboard();
+    renderWord();
+  }
+
+  function renderWord() {
+    const container = document.getElementById('hmWord');
+    container.innerHTML = '';
+    hmWord.split('').forEach(letter => {
+      const box = document.createElement('div');
+      box.className = 'letter-box';
+      box.textContent = hmGuessed.includes(letter) ? letter : '';
+      container.appendChild(box);
+    });
+  }
+
+  function hmGuess(letter) {
+    if (hmGameOver || hmGuessed.includes(letter)) return;
+    hmGuessed.push(letter);
+
+    const btn = document.getElementById('key-' + letter);
+
+    if (hmWord.includes(letter)) {
+      btn.classList.add('correct');
+      renderWord();
+      // בדוק ניצחון
+      const allFound = hmWord.split('').every(l => hmGuessed.includes(l));
+      if (allFound) {
+        hmGameOver = true;
+        const st = document.getElementById('hmStatus');
+        st.className = 'hangman-status win';
+        st.textContent = '🎉 כל הכבוד! ניחשת נכון!';
+      }
+    } else {
+      btn.classList.add('wrong');
+      btn.disabled = true;
+      // הוסף חלק לגוף
+      document.getElementById(HM_PARTS[hmMistakes]).style.display = 'block';
+      hmMistakes++;
+      // עדכן לבבות
+      const hearts = HM_HEARTS.slice(0, 10 - hmMistakes).join('') +
+                     '🖤'.repeat(hmMistakes);
+      document.getElementById('hmMistakesEmoji').textContent = hearts;
+      document.getElementById('hmMistakesLeft').textContent = 10 - hmMistakes;
+
+      if (hmMistakes >= 10) {
+        hmGameOver = true;
+        const st = document.getElementById('hmStatus');
+        st.className = 'hangman-status lose';
+        st.textContent = `😢 הפסדת! המילה הייתה: ${hmWord}`;
+      }
+    }
+  }
+
+  // התחל משחק כשמגיעים למסך איש תלוי
+  document.querySelector('[onclick="showScreen(\'hangman\', this)"]')
+    .addEventListener('click', () => {
+      if (!hmWord) newHangmanGame();
+    });
+</script>
+</body>
+</html>
