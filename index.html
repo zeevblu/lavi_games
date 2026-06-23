@@ -429,6 +429,7 @@
 
   <div class="hangman-card">
     <div id="hmCatTop" style="font-size:1em; font-weight:bold; color:#4f8ef7; margin-bottom:4px; min-height:1.4em;"></div>
+    <div id="keyDebug" style="font-size:0.8em; color:#888; min-height:1.2em;"></div>
     <h1>🪢 איש תלוי</h1>
 
     <!-- ציור האיש בSVG -->
@@ -912,7 +913,7 @@
   // מקלדת פיזית לאיש תלוי
   document.addEventListener('keydown', e => {
     if (!document.getElementById('hangman-screen').classList.contains('active')) return;
-    console.log('מקש:', e.key, 'קוד:', e.code);
+    document.getElementById('keyDebug').textContent = 'מקש: ' + e.key;
     if (e.key === ' ') { e.preventDefault(); hmGuess(' '); return; }
     const key = e.key.length === 1 ? e.key : '';
     if (key) hmGuess(key);
