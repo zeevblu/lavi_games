@@ -866,12 +866,14 @@
 
   function hmGuess(letter) {
     if (hmGameOver || hmGuessed.includes(letter)) return;
+    if (letter !== ' ' && !HM_LETTERS.includes(letter)) return;
     hmGuessed.push(letter);
 
     const btn = document.getElementById('key-' + letter);
 
     if (hmWord.includes(letter)) {
-      btn.classList.add('correct');
+      if (btn) btn.classList.add('correct');
+
       renderWord();
       // בדוק ניצחון
       const allFound = hmWord.split('').every(l => hmGuessed.includes(l));
@@ -882,8 +884,7 @@
         st.textContent = '🎉 כל הכבוד! ניחשת נכון!';
       }
     } else {
-      btn.classList.add('wrong');
-      btn.disabled = true;
+      if (btn) { btn.classList.add('wrong'); btn.disabled = true; }
       // הוסף חלק לגוף
       document.getElementById(HM_PARTS[hmMistakes]).style.display = 'block';
       hmMistakes++;
@@ -907,6 +908,15 @@
     .addEventListener('click', () => {
       if (!hmWord) newHangmanGame();
     });
+
+  // מקלדת פיזית לאיש תלוי
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('hangman-screen').classList.contains('active')) return;
+    console.log('מקש:', e.key, 'קוד:', e.code);
+    if (e.key === ' ') { e.preventDefault(); hmGuess(' '); return; }
+    const key = e.key.length === 1 ? e.key : '';
+    if (key) hmGuess(key);
+  });
 </script>
 </body>
 </html>
